@@ -10,7 +10,7 @@ code makes a simplifying assumption or departs from standard/expected behaviour.
 
 ## 1. Extracting annotations
 
-The plugin accepts two Kindle export formats. Both produce a `ParseResult`
+The plugin accepts three Kindle export formats. All produce a `ParseResult`
 containing a list of `Clipping` objects and statistics about skipped entries.
 
 ### 1a. My Clippings.txt (`clippings_parser.py`)
@@ -100,9 +100,105 @@ Page and location numbers are extracted as digit groups separated by
   The saved Calibre annotation will use `datetime.now(UTC)` as a
   fallback.
 
+### 1c. Kindle Notebook PDF (`pdf_notebook_parser.py`)
+
+The Kindle app can export annotations as a PDF document. This parser
+extracts text using Calibre's bundled `pdftotext` tool, then walks the
+resulting lines with a state machine.
+
+**Text extraction:** The PDF is converted to plain text via:
+
+```python
+from calibre.ebooks.pdf.pdftohtml import PDFTOTEXT
+subprocess.run([PDFTOTEXT, "-enc", "UTF-8", "-nopgbrk", path, "-"], ...)
+```
+
+The `-nopgbrk` flag strips form-feed page breaks and `-enc UTF-8` ensures
+proper encoding. Output goes to stdout (`-`) to avoid temp files.
+
+**PDF structure (after `pdftotext`):**
+
+```
+Title by Author                                 ← line 1
+Free Kindle instant preview: https://...        ← Amazon link (skip)
+Annotations (33) · 17 Highlights | ...          ← summary stats (skip)
+
+Book One: Pale                                  ← section heading
+
+Page 68 | Highlight (Yellow) "Has Caladan..."   ← highlight
+Nov 10, 2022                                    ← timestamp
+Note: Probably Azathani, actually.              ← paired note
+Nov 10, 2022                                    ← note timestamp
+
+Page 104 | Highlight (Yellow) "Hairlock is..."  ← multi-page highlight
+Nov 12, 2022
+Page 104 | Highlight Continued                  ← page-break artifact
+Note: Right from the start                      ← note on continued highlight
+Nov 12, 2022
+
+Page 402 | Note I think this is an Icarium...   ← standalone note
+Dec 7, 2022
+
+5                                               ← PDF page footer (skip)
+```
+
+**State-machine parsing:**
+
+| Line pattern | Action |
+|---|---|
+| `Page \d+ \| Highlight \((\w+)\) (.+)` | New highlight clipping; set as `current_highlight` |
+| `Page \d+ \| Highlight Continued` | PDF page-break artifact — keep `current_highlight` reference for note pairing |
+| `Page \d+ \| Note (.+)` | Standalone note (no associated highlight) |
+| `Note: (.+)` | Paired note belonging to `current_highlight` |
+| `^[A-Z][a-z]{2} \d{1,2}, \d{4}$` | Timestamp — attach to most recently created clipping |
+| `^\d+$` | PDF page footer — skip |
+| Other non-blank | Section heading — skip |
+
+**Multi-line highlight text:** A highlight's text may span multiple lines
+in the `pdftotext` output. The parser accumulates text lines until hitting
+a blank line, timestamp, note, or a new `Page |` entry.
+
+**Highlight Continued:** When a highlight entry is long enough to push
+across a PDF page boundary, the export inserts a `Page N | Highlight
+Continued` marker. This is purely a rendering artifact — the highlight
+text was already fully captured before the break. The parser does not
+create a new clipping; it just maintains the `current_highlight` reference
+so subsequent `Note:` lines pair correctly.
+
+**Note pairing (document order):** Same approach as the HTML notebook
+parser. When a `Note:` line follows a highlight, the note's
+`location_start` is set to the highlight's page number to enable
+downstream pairing.
+
+- **DEVIATION — No Kindle locations.** The PDF format contains only page
+  numbers, not Kindle location ranges. `location_start` and `location_end`
+  are both set to the page number as a synthetic location value. This
+  preserves the invariant that location fields are populated integers and
+  enables note–highlight pairing.
+
+- **DEVIATION — Date-only timestamps.** The format `Nov 10, 2022`
+  (`%b %d, %Y`) has no time component. The `datetime` will have time set
+  to midnight. Non-English month names will fail to parse, falling back to
+  `timestamp=None`.
+
+- **ASSUMPTION — English keywords only.** The patterns `Highlight`,
+  `Note`, `Page`, and `Highlight Continued` are hardcoded in English.
+  Non-English PDF exports will skip all entries (reported via
+  `ParseResult` skip statistics). Without a non-English sample PDF, this
+  is deferred.
+
+- **ASSUMPTION — `pdftotext` is available.** The parser imports
+  `calibre.ebooks.pdf.pdftohtml.PDFTOTEXT`, which points to the
+  `pdftotext` binary bundled with Calibre. If the binary is missing or
+  returns non-zero, a `RuntimeError` is raised.
+
+- **ASSUMPTION — Title line format is `Title by Author`.** The first line
+  is split on the last ` by ` occurrence. Titles containing " by " (e.g.,
+  "Pale Fire by the Light") will be misparsed.
+
 ### Parse feedback
 
-Both parsers return a `ParseResult` that includes `total_entries`,
+All three parsers return a `ParseResult` that includes `total_entries`,
 `parsed_entries`, `skipped_entries`, and up to 5 `skipped_samples` (raw
 text of entries that failed to parse). The UI displays a warning when
 entries are skipped, making previously-silent failures visible to the user.
@@ -406,9 +502,10 @@ it indistinguishable from one created by Calibre's built-in EPUB viewer.
 
 ```
 My Clippings.txt ───┐
-                    ├──> ParseResult  ──> [Clipping] ──┐
-Notebook HTML ──────┘     (+ skip stats)               │
-                                                       │  map_clippings()
+                    │
+Notebook HTML ──────┼──> ParseResult  ──> [Clipping] ──┐
+                    │     (+ skip stats)               │
+Notebook PDF ───────┘                                  │  map_clippings()
 EPUB file ──> EpubDocument ────────────────────────────┤
               (+ toc_root, page_anchors from           │
                inline pagebreaks + nav page-list)      │

@@ -24,7 +24,10 @@ Two export formats are supported:
 
 ### My Clippings.txt
 
-Found on the Kindle device itself. Connect your Kindle via USB and copy the file from:
+**This is the best option.** The clippings file contains the cleanest, most complete
+data about your annotations.
+
+The clippings file is found on the Kindle device itself. Connect your Kindle via USB and copy the file from:
 
 ```
 Kindle/documents/My Clippings.txt
@@ -36,6 +39,14 @@ It has a limited capacity, so your older highlights may not be present.
 ### Notebook HTML export
 
 Available through the Kindle app or the Share feature on newer Kindle devices. This produces a file named `<Book Title>-Notebook.html`. It contains only highlights and notes for a single book, without timestamps.
+
+### Notebook PDF export
+
+While reading a Kindle book on your Kindle, open the notebook view and click the export
+button. This will email a PDF to the email address associated with your Amazon account.
+
+**Important note**: This feature is only available for _Kindle books_. Sideloaded content
+will not have this option.
 
 ## Importing Annotations
 
@@ -87,7 +98,8 @@ The plugin attempts to work around this error, but it isn't 100% accurate. This 
 
 **The annotations table is empty after loading a file**
 
-Check that you selected the correct file type. `My Clippings.txt` must be the raw file from the Kindle device (UTF-8 with BOM). The Notebook HTML file must be the `.html` export, not a printed PDF.
+Check that you selected the correct file type. `My Clippings.txt` must be the raw file from the Kindle device (UTF-8 with BOM). The Notebook HTML file must be the `.html` export. A `.pdf` file must be the PDF you received from a Kindle export email, not an
+arbitrary print-to-PDF output.
 
 **The book does not appear in the book list**
 

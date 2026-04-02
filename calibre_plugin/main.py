@@ -29,6 +29,7 @@ from calibre.gui2.viewer.highlights import (
 
 from calibre_plugins.kindle_annotation_import.clippings_parser import parse_clippings
 from calibre_plugins.kindle_annotation_import.notebook_parser import parse_notebook
+from calibre_plugins.kindle_annotation_import.pdf_notebook_parser import parse_pdf_notebook
 from calibre_plugins.kindle_annotation_import.epub_reader import read_epub
 from calibre_plugins.kindle_annotation_import.mapper import map_clippings
 from calibre_plugins.kindle_annotation_import.cfi_generator import generate_cfi
@@ -186,7 +187,7 @@ class ImportDialog(QDialog):
             self,
             "kindle-annotations-file",
             "Select Kindle Annotations File",
-            filters=[("Kindle Annotations", ["txt", "html"])],
+            filters=[("Kindle Annotations", ["txt", "html", "pdf"])],
             select_only_single_file=True,
         )
         if not paths:
@@ -198,6 +199,8 @@ class ImportDialog(QDialog):
         try:
             if path.lower().endswith(".html"):
                 result = parse_notebook(path)
+            elif path.lower().endswith(".pdf"):
+                result = parse_pdf_notebook(path)
             else:
                 result = parse_clippings(path)
         except Exception as e:
