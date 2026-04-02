@@ -15,17 +15,17 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
-_BEFORE_PUNCT = re.compile(r"\s+([,.?!:;\-/])")
+_BEFORE_PUNCT = re.compile(r"\s+([,.?!:;\-/\u2026])")
 _AFTER_OPEN_QUOTE = re.compile(r"([\u201C\u2018])\s+")
 _BEFORE_CLOSE_QUOTE = re.compile(r"\s+([\u201D\u2019])")
-_APOSTROPHE_SPACES = re.compile(r"(\w)\s*(['\u2019])\s*(\w)")
+_MID_WORD_PUNCT = re.compile(r"(\w)\s*([\-'\u2019\u2013\u2014])\s*(\w)")
 
 
 def fix_spaced_punctuation(text: str) -> str:
     text = _BEFORE_PUNCT.sub(r"\1", text)
     text = _AFTER_OPEN_QUOTE.sub(r"\1", text)
     text = _BEFORE_CLOSE_QUOTE.sub(r"\1", text)
-    text = _APOSTROPHE_SPACES.sub(r"\1\2\3", text)
+    text = _MID_WORD_PUNCT.sub(r"\1\2\3", text)
     return text
 
 
@@ -61,6 +61,8 @@ def _map_highlight(clip: Clipping, epub: EpubDocument) -> MappingResult:
         if fixed_needle != needle:
             print(f"Trying again with fixed punctuation using string '{fixed_needle}'")
             result = _search_epub(clip, epub, fixed_needle)
+            if result.matched:
+                result.corrected_text = fixed_needle
 
     return result
 
@@ -86,7 +88,6 @@ def _search_epub(clip: Clipping, epub: EpubDocument, needle: str) -> MappingResu
             pos = region.find(needle)
             if pos >= 0:
                 abs_offset = search_start + pos
-                clip.content = needle
                 return _build_result(
                     clip,
                     anchor.file_path,

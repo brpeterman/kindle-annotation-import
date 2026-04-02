@@ -32,7 +32,9 @@ from calibre_plugins.kindle_annotation_import.notebook_parser import parse_noteb
 from calibre_plugins.kindle_annotation_import.epub_reader import read_epub
 from calibre_plugins.kindle_annotation_import.mapper import map_clippings
 from calibre_plugins.kindle_annotation_import.cfi_generator import generate_cfi
-from calibre_plugins.kindle_annotation_import.toc_resolver import resolve_toc_titles
+from calibre_plugins.kindle_annotation_import.toc_resolver import (
+    resolve_toc_titles_from_doc,
+)
 from calibre_plugins.kindle_annotation_import.models import ClippingType
 
 
@@ -195,16 +197,28 @@ class ImportDialog(QDialog):
 
         try:
             if path.lower().endswith(".html"):
-                self.clippings = parse_notebook(path)
+                result = parse_notebook(path)
             else:
-                self.clippings = parse_clippings(path)
+                result = parse_clippings(path)
         except Exception as e:
             error_dialog(
                 self, "Parse Error", f"Failed to parse annotations: {e}", show=True
             )
             return
 
+        self.clippings = result.clippings
         self._populate_table()
+
+        if result.skipped_entries > 0:
+            self.output.clear()
+            self.output.append(
+                f"Parsed {result.parsed_entries} of {result.total_entries} entries. "
+                f"{result.skipped_entries} could not be parsed."
+            )
+            if result.skipped_samples:
+                self.output.append("\nSample skipped entries:")
+                for sample in result.skipped_samples:
+                    self.output.append(f"  {sample[:120]}")
 
     def _populate_table(self):
         # Build a map from (book_title, location_start) -> note for pairing
@@ -213,14 +227,25 @@ class ImportDialog(QDialog):
             if c.clipping_type == ClippingType.NOTE:
                 notes_by_loc[(c.book_title, c.location_start)] = c
 
-        # Build display entries: only highlights and bookmarks (notes paired in)
+        # Build display entries: highlights and bookmarks (notes paired in)
         self.display_entries = []
+        paired_note_keys = set()
         for c in self.clippings:
             if c.clipping_type == ClippingType.HIGHLIGHT:
-                paired_note = notes_by_loc.get((c.book_title, c.location_end))
+                key = (c.book_title, c.location_end)
+                paired_note = notes_by_loc.get(key)
                 self.display_entries.append((c, paired_note))
+                if paired_note:
+                    paired_note_keys.add(key)
             elif c.clipping_type == ClippingType.BOOKMARK:
                 self.display_entries.append((c, None))
+
+        # Surface unpaired standalone notes at the end of the table
+        for c in self.clippings:
+            if c.clipping_type == ClippingType.NOTE:
+                key = (c.book_title, c.location_start)
+                if key not in paired_note_keys:
+                    self.display_entries.append((c, None))
 
         self.table.setRowCount(len(self.display_entries))
         for i, (clip, note) in enumerate(self.display_entries):
@@ -329,14 +354,21 @@ class ImportDialog(QDialog):
                 return
 
             spine_index = epub.spine_files.index(result.file_path)
-            toc_titles = resolve_toc_titles(epub_bytes, result.file_path)
+            toc_titles = resolve_toc_titles_from_doc(
+                epub, result.file_path, result.char_offset_start or 0
+            )
             book_title = self.db.field_for("title", selected_book_id)
 
             # Build annotation JSON (for console output)
+            is_standalone_note = (
+                clip.clipping_type == ClippingType.NOTE and paired_note is None
+            )
+            # Use punctuation-corrected text when the Kindle export had bad spacing
+            highlight_text = result.corrected_text or clip.content
             annot = {
                 "type": "highlight",
                 "uuid": uuid_mod.uuid4().hex[:22],
-                "highlighted_text": clip.content,
+                "highlighted_text": "" if is_standalone_note else highlight_text,
                 "start_cfi": start_cfi,
                 "end_cfi": end_cfi,
                 "spine_index": spine_index,
@@ -349,7 +381,9 @@ class ImportDialog(QDialog):
                 "toc_family_titles": toc_titles,
             }
 
-            if paired_note:
+            if is_standalone_note:
+                annot["notes"] = clip.content
+            elif paired_note:
                 annot["notes"] = paired_note.content
 
             # Print JSON to console

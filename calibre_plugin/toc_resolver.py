@@ -76,6 +76,38 @@ def resolve_toc_titles(epub_data, spine_file, char_offset=0):
     return ["Unknown"]
 
 
+def parse_toc_from_zip(zf: zipfile.ZipFile) -> "TocEntry | None":
+    """Parse the TOC tree from an already-open EPUB zip.
+
+    Returns the root TocEntry, or None if no nav document is found.
+    """
+    nav_path, nav_dir = _find_nav_path(zf)
+    if not nav_path:
+        return None
+    return _parse_toc_tree(zf, nav_path, nav_dir)
+
+
+def resolve_toc_titles_from_doc(epub, spine_file, char_offset=0):
+    """Resolve TOC breadcrumbs using a pre-parsed EpubDocument.
+
+    Args:
+        epub: an EpubDocument with toc_root and spine_files populated
+        spine_file: the spine file path
+        char_offset: character offset (currently unused, reserved for future)
+
+    Returns:
+        A list of TOC title strings, or ['Unknown'].
+    """
+    if epub.toc_root is None:
+        return ["Unknown"]
+    flat = []
+    _flatten_toc(epub.toc_root, flat, epub.spine_files)
+    best = _find_best_match(flat, spine_file, epub.spine_files)
+    if best:
+        return best.family_titles()
+    return ["Unknown"]
+
+
 def _find_nav_path(zf):
     """Find the nav document path and its directory."""
     container = etree.fromstring(zf.read("META-INF/container.xml"))

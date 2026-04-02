@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -39,6 +39,7 @@ class EpubDocument:
     page_anchors: list[PageAnchor]
     file_texts: dict[str, str]
     file_html: dict[str, str]
+    toc_root: object = None  # TocEntry tree root, populated by read_epub
 
 
 @dataclass
@@ -51,3 +52,13 @@ class MappingResult:
     match_method: Optional[str] = None
     confidence: float = 0.0
     context: str = ""
+    corrected_text: Optional[str] = None  # set when fix_spaced_punctuation was applied
+
+
+@dataclass
+class ParseResult:
+    clippings: list[Clipping]
+    total_entries: int
+    parsed_entries: int
+    skipped_entries: int
+    skipped_samples: list[str] = field(default_factory=list)
