@@ -34,10 +34,6 @@ This packages every file in `calibre_plugin/` flat into `Kindle_Annotation_Impor
 
 ## Development Workflow
 
-### Editing plugin code
-
-All plugin logic lives in `calibre_plugin/`. The `src/` directory mirrors it with relative imports for use in standalone scripts and tests. When you change a module, update both directories if the change is format-independent (parsers, models, mapper, CFI/TOC helpers). Changes to `main.py` or `ui.py` (Calibre-specific UI) only need to go in `calibre_plugin/`.
-
 ### Import conventions
 
 | Directory         | Import style                                                    |
