@@ -13,8 +13,10 @@ A Calibre plugin that imports your Kindle highlights and notes into Calibre's na
 2. In Calibre, open **Preferences → Plugins**.
 3. Click **Load plugin from file** and select the zip file.
 4. Restart Calibre.
-
-A new **Import Kindle Annotations** action will appear in the toolbar (or under the **Plugins** menu).
+5. Add the plugin to a menu:
+   1. Go to **Preferences > Interface > Toolbars & menus**.
+   2. Select a menu to add the button to (for example, the main toolbar).
+   3. Find the **Import Kindle Annotations** menu item on the left and add it to the menu on the right.
 
 ## Getting Your Annotations Off the Kindle
 
@@ -28,7 +30,8 @@ Found on the Kindle device itself. Connect your Kindle via USB and copy the file
 Kindle/documents/My Clippings.txt
 ```
 
-This file contains all your highlights, notes, and bookmarks across every book, with timestamps.
+This file contains all your highlights, notes, and bookmarks across your most recent books, with timestamps.
+It has a limited capacity, so your older highlights may not be present.
 
 ### Notebook HTML export
 
@@ -74,6 +77,13 @@ The plugin searches for your exact highlight text inside the EPUB. Matches can f
 - The EPUB uses unusual Unicode characters or ligatures that differ from what Kindle captured.
 
 These are limitations of the plugin and can't be worked around. You'll need to manually enter your highlight using Calibre's native features.
+
+There is also an issue with the Kindle notebook format in which extra whitespace is added around punctuation.
+The plugin attempts to work around this error, but it isn't 100% accurate. This can cause problems like:
+
+- The plugin can't find your highlight in the book.
+- The plugin fails to marry your notes with the highlight.
+- The plugin associates a note with the wrong highlight.
 
 **The annotations table is empty after loading a file**
 
