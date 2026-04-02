@@ -5,7 +5,7 @@ class KindleAnnotationImportAction(InterfaceAction):
     name = "Kindle Annotation Import"
     action_spec = (
         "Import Kindle Annotations",
-        None,
+        "store.png",
         "Import highlights and notes from Kindle My Clippings.txt or a Notebook HTML file",
         None,
     )
