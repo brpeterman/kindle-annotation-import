@@ -19,6 +19,7 @@ kindle-annotation-import/
 │   ├── cfi_generator.py     # Converts character offsets to EPUB CFI strings
 │   ├── toc_resolver.py      # Resolves a spine location to a TOC breadcrumb path
 │   └── plugin-import-name-kindle_annotation_import.txt
+├── tests                    # Unit tests
 ```
 
 ## Building the Plugin
@@ -43,7 +44,44 @@ All plugin logic lives in `calibre_plugin/`. The `src/` directory mirrors it wit
 | ----------------- | --------------------------------------------------------------- |
 | `calibre_plugin/` | `from calibre_plugins.kindle_annotation_import.models import …` |
 
+### Unit tests
+
+1. Create a venv:
+   ```sh
+   python -m venv .venv
+   ```
+2. Activate the venv:
+
+   ```sh
+   # sh
+   source .venv/bin/activate
+
+   # Windows cmd
+   .\.venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```sh
+   pip install .
+   ```
+4. Run tests:
+   ```sh
+   pytest
+   ```
+
 ### Testing inside Calibre
+
+#### Ad hoc testing
+
+To install the plugin without packaging and importing it:
+
+```sh
+calibre-debug -s; calibre-customize -b ./calibre_plugin
+```
+
+Start up Calibre and the latest plugin code should be loaded.
+
+#### Release testing
 
 After editing, rebuild the zip and reinstall:
 
@@ -51,25 +89,20 @@ After editing, rebuild the zip and reinstall:
 2. In Calibre: **Preferences → Plugins → Load plugin from file** → select `Kindle_Annotation_Import.zip`
 3. Restart Calibre.
 
-Calibre also supports loading a plugin from a directory during development (avoids the rebuild/reinstall cycle):
-
-```
-calibre-debug --add-simple-plugin=calibre_plugin/
-```
-
 Plugin `print()` output is visible in the Calibre debug console (`calibre-debug -g`).
 
 ## Module Overview
 
-| Module                | Responsibility                                                    |
-| --------------------- | ----------------------------------------------------------------- |
-| `clippings_parser.py` | Parses `My Clippings.txt` into `list[Clipping]`                   |
-| `notebook_parser.py`  | Parses `*-Notebook.html` into `list[Clipping]`                    |
-| `epub_reader.py`      | Opens an EPUB, builds plain-text per spine file + page anchors    |
-| `mapper.py`           | Matches each `Clipping` to a character offset in the EPUB text    |
-| `cfi_generator.py`    | Converts a character offset to an EPUB CFI path string            |
-| `toc_resolver.py`     | Maps a spine file to a TOC breadcrumb list                        |
-| `main.py`             | Dialog UI — wires everything together, writes Calibre annotations |
+| Module                   | Responsibility                                                    |
+| ------------------------ | ----------------------------------------------------------------- |
+| `clippings_parser.py`    | Parses `My Clippings.txt` into `list[Clipping]`                   |
+| `notebook_parser.py`     | Parses `*-Notebook.html` into `list[Clipping]`                    |
+| `pdf_notebook_parser.py` | Parses `Notebook - *.pdf` into `list[Clipping]`                   |
+| `epub_reader.py`         | Opens an EPUB, builds plain-text per spine file + page anchors    |
+| `mapper.py`              | Matches each `Clipping` to a character offset in the EPUB text    |
+| `cfi_generator.py`       | Converts a character offset to an EPUB CFI path string            |
+| `toc_resolver.py`        | Maps a spine file to a TOC breadcrumb list                        |
+| `main.py`                | Dialog UI — wires everything together, writes Calibre annotations |
 
 ## Known Limitations
 
