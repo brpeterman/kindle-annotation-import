@@ -14,13 +14,13 @@ A Calibre plugin that imports your Kindle highlights and notes into Calibre's na
 3. Click **Load plugin from file** and select the zip file.
 4. Restart Calibre.
 5. Add the plugin to a menu:
-   1. Go to **Preferences > Interface > Toolbars & menus**.
+   1. Go to **Preferences → Interface → Toolbars & menus**.
    2. Select a menu to add the button to (for example, the main toolbar).
    3. Find the **Import Kindle Annotations** menu item on the left and add it to the menu on the right.
 
 ## Getting Your Annotations Off the Kindle
 
-Two export formats are supported:
+Three export formats are supported:
 
 ### My Clippings.txt
 
@@ -51,7 +51,7 @@ will not have this option.
 ## Importing Annotations
 
 1. Click **Import Kindle Annotations** in the Calibre toolbar.
-2. Click **Select Annotations File** and choose your `.txt` or `.html` export file.
+2. Click **Select Annotations File** and choose your `.txt`, `.html`, or `.pdf` export file.
    - The annotations table will populate with all highlights and notes found in the file.
 3. Select the annotation row you want to import.
 4. In the book list at the bottom, find and select the matching book in your Calibre library.
@@ -69,13 +69,13 @@ Open the book in Calibre's built-in viewer. Your imported highlights will appear
 
 ## What Gets Imported
 
-| Feature                         | Supported                                          |
-| ------------------------------- | -------------------------------------------------- |
-| Highlights                      | Yes                                                |
-| Notes paired to a highlight     | Yes (stored as the annotation's note)              |
-| Standalone notes (no highlight) | No                                                 |
-| Bookmarks                       | Partial (saved as a position, no highlighted text) |
-| Multiple books in one file      | Yes — filter by book in the annotations table      |
+| Feature                         | Supported                                     |
+| ------------------------------- | --------------------------------------------- |
+| Highlights                      | Yes                                           |
+| Notes paired to a highlight     | Yes (stored as the annotation's note)         |
+| Standalone notes (no highlight) | Yes                                           |
+| Bookmarks                       | Yes                                           |
+| Multiple books in one file      | Yes — filter by book in the annotations table |
 
 ## Troubleshooting
 
