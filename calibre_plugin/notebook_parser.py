@@ -90,6 +90,18 @@ def parse_notebook(path: str | Path) -> ParseResult:
             )
         )
 
+        # Pair a note with the immediately preceding highlight using document order.
+        # The notebook format strips location ranges to single values, so a note at
+        # location N won't numerically match a highlight at location M (M != N) even
+        # when they are semantically linked.  Adjacent order in the file is the
+        # best pairing signal.
+        if (
+            clipping_type == ClippingType.NOTE
+            and len(clippings) >= 2
+            and clippings[-2].clipping_type == ClippingType.HIGHLIGHT
+        ):
+            clippings[-1].location_start = clippings[-2].location_start
+
     skipped = total - len(clippings)
     return ParseResult(
         clippings=clippings,
